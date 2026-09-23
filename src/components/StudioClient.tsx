@@ -1,12 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Preview from "@/components/Preview";
 import { DEFAULT_THEME, SAMPLE } from "@/lib/theme";
 import type { DiagramTheme } from "@/lib/render";
 
+function useDebounced<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
 export default function StudioClient() {
   const [code, setCode] = useState(SAMPLE);
+  const debouncedCode = useDebounced(code, 250);
   const [theme, setTheme] = useState<DiagramTheme>({ ...DEFAULT_THEME });
   const [mode, setMode] = useState<"light" | "dark">("dark");
 
@@ -44,7 +54,7 @@ export default function StudioClient() {
             placeholder="flowchart TD&#10;  A --> B"
           />
         </section>
-        <Preview code={code} theme={theme} className="min-h-[50vh] lg:min-h-0" />
+        <Preview code={debouncedCode} theme={theme} className="min-h-[50vh] lg:min-h-0" />
       </main>
     </div>
   );
