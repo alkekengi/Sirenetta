@@ -11,6 +11,7 @@ export const DEFAULT_THEME: DiagramTheme = {
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif',
   fontSize: "14px",
+  look: "classic",
 };
 
 export const SAMPLE = `flowchart LR

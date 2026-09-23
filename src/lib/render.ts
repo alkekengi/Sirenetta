@@ -1,4 +1,4 @@
-import mermaid from "mermaid";
+import { enrichDiagram } from "@/lib/enrich";
 
 export type DiagramTheme = {
   background: string;
@@ -9,7 +9,24 @@ export type DiagramTheme = {
   arrowheadColor: string;
   fontFamily: string;
   fontSize: string;
+  /** "classic" = clean vector, "handDrawn" = sketchy human stroke. */
+  look: string;
 };
+
+type Mermaid = typeof import("mermaid").default;
+
+// mermaid is heavy; keep it out of the initial chunk and load once on demand.
+let mermaidPromise: Promise<Mermaid> | null = null;
+
+function loadMermaid(): Promise<Mermaid> {
+  mermaidPromise ??= import("mermaid").then((module) => module.default);
+  return mermaidPromise;
+}
+
+/** Allowlist: look flows into mermaid config, never trust stored values. */
+function resolveLook(theme: DiagramTheme): "classic" | "handDrawn" {
+  return theme.look === "handDrawn" ? "handDrawn" : "classic";
+}
 
 function sanitizeCssValue(value: string): string {
   // themeVariables are interpolated into a <style> block in the output SVG,
@@ -25,9 +42,14 @@ const THEME_CSS = `
 .node rect, .actor { stroke-width: 1.5px; }
 .edgeLabel { font-weight: 600; }
 .messageLine { stroke-width: 1.5px; }
+/* Human touch: round caps/joins soften every line and arrow tail. */
+.messageLine, .actor-line, .loopLine, .edgePath path, .flowchart-link {
+  stroke-linecap: round; stroke-linejoin: round;
+}
 `;
 
-function ensureInit(theme: DiagramTheme) {
+function ensureInit(mermaid: Mermaid, theme: DiagramTheme) {
+  const look = resolveLook(theme);
   mermaid.initialize({
     startOnLoad: false,
     // "loose" would allow <script>/onclick injection from diagram text
@@ -36,8 +58,25 @@ function ensureInit(theme: DiagramTheme) {
     // which keeps canvas PNG export untainted).
     securityLevel: "strict",
     theme: "base",
+    look,
     themeCSS: THEME_CSS,
-    flowchart: { htmlLabels: false },
+    // Global (not flowchart.htmlLabels, deprecated in v12): SVG <text> labels
+    // instead of <foreignObject>, which would taint the canvas and break PNG
+    // export.
+    htmlLabels: false,
+    // basis = smooth organic curves instead of angular elbows.
+    flowchart: { curve: "basis", look },
+    // Airier sequence layout: wider lanes, taller rows, padded fragments.
+    sequence: {
+      look,
+      actorMargin: 90,
+      width: 170,
+      height: 70,
+      boxMargin: 18,
+      boxTextMargin: 8,
+      noteMargin: 14,
+      messageMargin: 50,
+    },
     themeVariables: {
       ...theme,
       fontFamily: sanitizeCssValue(theme.fontFamily),
@@ -73,6 +112,15 @@ function cleanup(id: string) {
   document.getElementById(id)?.remove();
 }
 
+// look via initialize() is ignored in v12 (diagram-type defaults win);
+// frontmatter is priority 1 and works (verified: rough-node appears).
+// Only inject when the user has no frontmatter of their own.
+function withLook(code: string, look: "classic" | "handDrawn"): string {
+  if (look !== "handDrawn") return code;
+  if (/^\s*---\s*\n/.test(code)) return code;
+  return `---\nconfig:\n  look: handDrawn\n---\n${code}`;
+}
+
 // mermaid.initialize mutates global config, so two overlapping render()
 // calls with different themes race: the loser renders with the winner's
 // theme. Chain renders through a module-level queue to keep init+render
@@ -95,9 +143,10 @@ async function renderInner(
 ): Promise<{ svg: string } | { error: string }> {
   const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   try {
-    ensureInit(theme);
-    const { svg } = await mermaid.render(id, code);
-    return { svg };
+    const mermaid = await loadMermaid();
+    ensureInit(mermaid, theme);
+    const { svg } = await mermaid.render(id, withLook(code, resolveLook(theme)));
+    return { svg: enrichDiagram(svg) };
   } catch (e) {
     const msg =
       e instanceof Error

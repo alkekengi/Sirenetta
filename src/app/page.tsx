@@ -1,5 +1,5 @@
-import StudioClient from "@/components/StudioClient";
+import StudioLoader from "@/components/StudioLoader";
 
 export default function Home() {
-  return <StudioClient />;
+  return <StudioLoader />;
 }

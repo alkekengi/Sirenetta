@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { EditorView } from "@codemirror/view";
 import { mermaidHighlight, mermaidSupport } from "@/lib/mermaidMode";
@@ -28,7 +28,7 @@ const editorTheme = EditorView.theme({
   ".cm-activeLine": { background: "transparent" },
 });
 
-export default function Editor({ value, onChange }: Props) {
+function Editor({ value, onChange }: Props) {
   // Memoized: new extension identity per render forces CodeMirror to
   // reconfigure on every keystroke (typing lag / cursor jumps).
   const extensions = useMemo(
@@ -47,3 +47,5 @@ export default function Editor({ value, onChange }: Props) {
     />
   );
 }
+
+export default memo(Editor);
