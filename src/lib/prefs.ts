@@ -10,7 +10,7 @@ const SIDEBAR_KEY = "sirenetta.prefs.sidebar";
 const SORT_KEY = "sirenetta.prefs.sort";
 
 const DEFAULT_SORT: SortPrefs = { key: "savedAt", direction: "desc" };
-const SORT_KEYS = new Set<SortKey>(["name", "savedAt", "renderedAt"]);
+const SORT_KEYS = new Set<SortKey>(["name", "savedAt", "createdAt"]);
 
 export function readSidebarOpen(fallback: boolean): boolean {
   const raw = readItem(SIDEBAR_KEY);

@@ -21,7 +21,6 @@ export type DiagramsApi = {
   remove: (id: string) => void;
   rename: (id: string, title: string) => void;
   updateCode: (code: string) => void;
-  markRendered: (id: string, renderedAt: number) => void;
 };
 
 export function useDiagrams(): DiagramsApi {
@@ -70,14 +69,7 @@ export function useDiagrams(): DiagramsApi {
     }));
   }, []);
 
-  const markRendered = useCallback((id: string, renderedAt: number) => {
-    setStore((prev) => ({
-      ...prev,
-      items: prev.items.map((item) => (item.id === id ? { ...item, renderedAt } : item)),
-    }));
-  }, []);
-
   const active = store.items.find((item) => item.id === store.activeId) ?? store.items[0];
 
-  return { items: store.items, activeId: store.activeId, active, select, create, remove, rename, updateCode, markRendered };
+  return { items: store.items, activeId: store.activeId, active, select, create, remove, rename, updateCode };
 }

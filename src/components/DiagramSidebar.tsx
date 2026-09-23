@@ -104,7 +104,7 @@ export default function DiagramSidebar({
               className={`${CONTROL_CLASS} cursor-pointer`}
             >
               <option value="savedAt">Salvato</option>
-              <option value="renderedAt">Renderizzato</option>
+              <option value="createdAt">Creato</option>
               <option value="name">Nome</option>
             </select>
             <button

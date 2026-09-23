@@ -89,13 +89,9 @@ export default function DiagramListItem({
               </span>
               <span
                 className="block text-[10px] opacity-70"
-                title={
-                  diagram.renderedAt === null ? undefined : formatAbsolute(diagram.renderedAt)
-                }
+                title={formatAbsolute(diagram.createdAt)}
               >
-                {diagram.renderedAt === null
-                  ? "non renderizzato"
-                  : `reso ${formatTimestamp(diagram.renderedAt, now)}`}
+                creato {formatTimestamp(diagram.createdAt, now)}
               </span>
             </button>
           )}

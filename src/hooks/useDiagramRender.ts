@@ -5,7 +5,6 @@ import { renderDiagram, type DiagramTheme } from "@/lib/render";
 
 export type RenderReport = {
   svg: string;
-  renderedAt: number;
 };
 
 type RenderState = {
@@ -35,7 +34,7 @@ export function useDiagramRender(
       if ("svg" in result) {
         setSvg(result.svg);
         setError(null);
-        notifyRender({ svg: result.svg, renderedAt: Date.now() });
+        notifyRender({ svg: result.svg });
       } else {
         // Keep the last good diagram on screen; transient syntax states while
         // typing must not blank the preview or kill the export buttons.

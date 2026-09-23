@@ -9,8 +9,6 @@ export type Diagram = {
   createdAt: number;
   /** Last autosave of the code. */
   savedAt: number;
-  /** Last successful render, null until the diagram has rendered. */
-  renderedAt: number | null;
 };
 
 export type DiagramStore = {
@@ -18,7 +16,7 @@ export type DiagramStore = {
   items: Diagram[];
 };
 
-export type SortKey = "name" | "savedAt" | "renderedAt";
+export type SortKey = "name" | "savedAt" | "createdAt";
 export type SortDirection = "asc" | "desc";
 
 export const STORE_KEY = "sirenetta.diagrams.v1";
@@ -64,7 +62,7 @@ function truncate(text: string): string {
 }
 
 export function createDiagram(code: string, now = Date.now()): Diagram {
-  return { id: newId(), code, title: null, createdAt: now, savedAt: now, renderedAt: null };
+  return { id: newId(), code, title: null, createdAt: now, savedAt: now };
 }
 
 export function createStore(code = SAMPLE, now = Date.now()): DiagramStore {
@@ -112,7 +110,7 @@ export function sortDiagrams(
     if (key === "name") {
       return factor * (titles.get(a.id) ?? "").localeCompare(titles.get(b.id) ?? "", "it");
     }
-    return factor * ((a[key] ?? 0) - (b[key] ?? 0));
+    return factor * (a[key] - b[key]);
   });
 }
 
@@ -123,8 +121,7 @@ function toDiagram(value: unknown): Diagram | null {
     typeof diagram.id !== "string" ||
     typeof diagram.code !== "string" ||
     typeof diagram.createdAt !== "number" ||
-    typeof diagram.savedAt !== "number" ||
-    (diagram.renderedAt !== null && typeof diagram.renderedAt !== "number")
+    typeof diagram.savedAt !== "number"
   ) {
     return null;
   }
@@ -134,7 +131,6 @@ function toDiagram(value: unknown): Diagram | null {
     title: typeof diagram.title === "string" ? diagram.title : null,
     createdAt: diagram.createdAt,
     savedAt: diagram.savedAt,
-    renderedAt: diagram.renderedAt ?? null,
   };
 }
 

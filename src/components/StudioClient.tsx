@@ -18,8 +18,7 @@ const SIDEBAR_ID = "diagram-sidebar";
 export default function StudioClient() {
   // Client-only (page uses ssr:false): storage and media reads run on first
   // render, no hydration to mismatch.
-  const { items, activeId, active, select, create, remove, rename, updateCode, markRendered } =
-    useDiagrams();
+  const { items, activeId, active, select, create, remove, rename, updateCode } = useDiagrams();
   // Theme has no UI right now; the stored value still drives render + export.
   const [theme] = usePersistedState(readTheme, writeTheme);
   const debouncedTheme = useDebounced(theme, 250);
@@ -42,9 +41,8 @@ export default function StudioClient() {
     (report: RenderReport) => {
       renderRef.current = { id: activeId, svg: report.svg };
       setRenderedId(activeId);
-      markRendered(activeId, report.renderedAt);
     },
-    [activeId, markRendered],
+    [activeId],
   );
 
   useEffect(() => {
