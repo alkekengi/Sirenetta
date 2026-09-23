@@ -29,6 +29,7 @@ export default function StudioClient() {
   const debouncedCode = useDebounced(code ?? "", 250);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage draft: hydrate after mount to avoid SSR mismatch
     setCode(loadDraft());
   }, []);
 
@@ -42,6 +43,10 @@ export default function StudioClient() {
 
   const handleSvg = useCallback((svg: string | null) => setLastSvg(svg), []);
 
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", mode === "dark");
+  }, [mode]);
+
   function handleDownloadSvg() {
     if (lastSvg) downloadSvg(lastSvg, "diagram.svg");
   }
@@ -52,7 +57,14 @@ export default function StudioClient() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
-      <header className="flex items-center justify-between px-5 py-3">
+      <header
+        className="sticky top-0 z-10 flex items-center justify-between px-5 py-3"
+        style={{
+          background: "color-mix(in srgb, var(--canvas) 70%, transparent)",
+          backdropFilter: "blur(20px) saturate(180%)",
+          WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        }}
+      >
         <span className="font-display text-lg font-semibold">sirenetta</span>
         <div className="flex items-center gap-2">
           <button
@@ -90,8 +102,8 @@ export default function StudioClient() {
         </div>
       </header>
 
-      <main className="grid flex-1 grid-cols-1 lg:grid-cols-2">
-        <section className="border-r border-line">
+      <main className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
+        <section className="min-h-0 border-r border-line">
           {code === null ? (
             <div className="p-5 text-sm opacity-50">Loading…</div>
           ) : (

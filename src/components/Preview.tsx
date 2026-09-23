@@ -39,7 +39,8 @@ export default function Preview({ code, theme, onSvg, className }: Props) {
   if (error) {
     return (
       <div
-        className={`flex items-center justify-center p-6 text-sm text-accent ${className ?? ""}`}
+        className={`drafting-grid flex items-center justify-center p-6 text-sm ${className ?? ""}`}
+        style={{ color: "#c2452d" }}
         role="alert"
       >
         {error}
@@ -49,7 +50,10 @@ export default function Preview({ code, theme, onSvg, className }: Props) {
 
   if (!svg) {
     return (
-      <div className={`flex items-center justify-center p-6 text-sm opacity-50 ${className ?? ""}`}>
+      <div
+        className={`drafting-grid flex items-center justify-center p-6 text-sm ${className ?? ""}`}
+        style={{ color: "#5a7a76" }}
+      >
         Rendering…
       </div>
     );

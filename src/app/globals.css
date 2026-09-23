@@ -42,6 +42,7 @@ body {
 }
 
 .drafting-grid {
-  background-image: radial-gradient(var(--line) 1px, transparent 1px);
+  background-color: #f4f8f7;
+  background-image: radial-gradient(#b9d6d0 1px, transparent 1px);
   background-size: 24px 24px;
 }
