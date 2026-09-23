@@ -30,7 +30,12 @@ export default function ThemePanel({ theme, onChange }: Props) {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+    // suppressHydrationWarning: password-manager extensions (e.g. Proton Pass)
+    // inject attributes like data-protonpass-form into this subtree.
+    <div
+      suppressHydrationWarning
+      className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4"
+    >
       {FIELDS.map((f) => (
         <label key={f.key} className="flex items-center gap-3">
           <input

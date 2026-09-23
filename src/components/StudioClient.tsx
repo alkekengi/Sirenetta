@@ -9,10 +9,33 @@ import { downloadPng, downloadSvg } from "@/lib/export";
 import type { DiagramTheme } from "@/lib/render";
 
 const DRAFT_KEY = "sirenetta.draft";
+const THEME_KEY = "sirenetta.theme.v2";
 
 function loadDraft(): string {
   if (typeof window === "undefined") return SAMPLE;
-  return localStorage.getItem(DRAFT_KEY) ?? SAMPLE;
+  try {
+    return localStorage.getItem(DRAFT_KEY) ?? SAMPLE;
+  } catch {
+    // Private mode / blocked storage must not break first paint.
+    return SAMPLE;
+  }
+}
+
+function loadTheme(): DiagramTheme {
+  const base = { ...DEFAULT_THEME };
+  if (typeof window === "undefined") return base;
+  try {
+    const raw = localStorage.getItem(THEME_KEY);
+    if (!raw) return base;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    for (const key of Object.keys(base) as (keyof DiagramTheme)[]) {
+      const v = parsed[key];
+      if (typeof v === "string" && v.length <= 200) base[key] = v;
+    }
+    return base;
+  } catch {
+    return base;
+  }
 }
 
 function useDebounced<T>(value: T, delay: number): T {
@@ -26,20 +49,49 @@ function useDebounced<T>(value: T, delay: number): T {
 
 export default function StudioClient() {
   const [code, setCode] = useState<string | null>(null);
+  // DEFAULT init on both server and client: ThemePanel inputs render
+  // value={theme} on first paint, so a stored theme in the initializer
+  // would diverge from SSR HTML (hydration mismatch). Hydrate post-mount.
+  const [theme, setTheme] = useState<DiagramTheme>({ ...DEFAULT_THEME });
+  const [ready, setReady] = useState(false);
+  // Mounted flag: header buttons must match SSR (disabled) on first paint.
+  const [mounted, setMounted] = useState(false);
   const debouncedCode = useDebounced(code ?? "", 250);
+  // Theme text inputs fire per keystroke and color pickers fire continuously
+  // while dragging; debounce like code to avoid a render storm.
+  const debouncedTheme = useDebounced(theme, 250);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage draft: hydrate after mount to avoid SSR mismatch
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage: hydrate after mount to avoid SSR mismatch
     setCode(loadDraft());
+    setTheme(loadTheme());
+    setReady(true);
+    setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (code !== null) localStorage.setItem(DRAFT_KEY, code);
+    if (code !== null) {
+      try {
+        localStorage.setItem(DRAFT_KEY, code);
+      } catch {
+        // QuotaExceededError etc: draft persistence is best-effort.
+      }
+    }
   }, [code]);
-  const [theme, setTheme] = useState<DiagramTheme>({ ...DEFAULT_THEME });
+
+  useEffect(() => {
+    // Skip the mount run: state still holds defaults, storage holds truth.
+    if (!ready) return;
+    try {
+      localStorage.setItem(THEME_KEY, JSON.stringify(theme));
+    } catch {
+      // Best-effort.
+    }
+  }, [theme, ready]);
   const [mode, setMode] = useState<"light" | "dark">("dark");
   const [panelOpen, setPanelOpen] = useState(false);
   const [lastSvg, setLastSvg] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const handleSvg = useCallback((svg: string | null) => setLastSvg(svg), []);
 
@@ -48,15 +100,30 @@ export default function StudioClient() {
   }, [mode]);
 
   function handleDownloadSvg() {
-    if (lastSvg) downloadSvg(lastSvg, "diagram.svg");
+    if (!lastSvg) return;
+    setExportError(null);
+    try {
+      downloadSvg(lastSvg, "diagram.svg");
+    } catch {
+      setExportError("Esportazione SVG non riuscita");
+    }
   }
 
   async function handleDownloadPng() {
-    if (lastSvg) await downloadPng(lastSvg, "diagram.png", 2);
+    if (!lastSvg) return;
+    setExportError(null);
+    try {
+      await downloadPng(lastSvg, "diagram.png", 2, theme.background);
+    } catch {
+      setExportError("Esportazione PNG non riuscita");
+    }
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-canvas text-ink">
+    // lg:h-dvh + overflow-hidden: constrain the preview pane to the viewport
+    // so zoom-fit measures a bounded box. Without it the pane grows with
+    // content, fit computes against a giant viewport, and the page scrolls.
+    <div className="flex min-h-dvh flex-col bg-canvas text-ink lg:h-dvh lg:overflow-hidden">
       <header
         className="sticky top-0 z-10 flex items-center justify-between px-5 py-3"
         style={{
@@ -67,25 +134,30 @@ export default function StudioClient() {
       >
         <span className="font-display text-lg font-semibold">sirenetta</span>
         <div className="flex items-center gap-2">
+          {exportError ? (
+            <span className="text-xs font-medium" style={{ color: "#c2452d" }} role="alert">
+              {exportError}
+            </span>
+          ) : null}
           <button
             onClick={handleDownloadPng}
-            disabled={!lastSvg}
-            className="btn-press rounded-full bg-panel px-4 py-1.5 text-xs font-medium text-canvas disabled:opacity-40"
+            disabled={!mounted || !lastSvg}
+            className="btn-press rounded-full bg-panel px-4 py-1.5 text-xs font-medium text-[#EDF5F3] disabled:opacity-40"
           >
             PNG
           </button>
           <button
             onClick={handleDownloadSvg}
-            disabled={!lastSvg}
-            className="btn-press rounded-full bg-panel px-4 py-1.5 text-xs font-medium text-canvas disabled:opacity-40"
+            disabled={!mounted || !lastSvg}
+            className="btn-press rounded-full bg-panel px-4 py-1.5 text-xs font-medium text-[#EDF5F3] disabled:opacity-40"
           >
             SVG
           </button>
-          <div className="rounded-full bg-panel p-1 text-canvas">
+          <div className="rounded-full bg-panel p-1 text-[#EDF5F3]">
             <button
               onClick={() => setMode("light")}
               className={`btn-press rounded-full px-3 py-1 text-xs font-medium ${
-                mode === "light" ? "bg-canvas text-ink" : "opacity-60"
+                mode === "light" ? "bg-[#EDF5F3] text-[#0E3A3F]" : "opacity-60"
               }`}
             >
               light
@@ -93,7 +165,7 @@ export default function StudioClient() {
             <button
               onClick={() => setMode("dark")}
               className={`btn-press rounded-full px-3 py-1 text-xs font-medium ${
-                mode === "dark" ? "bg-canvas text-ink" : "opacity-60"
+                mode === "dark" ? "bg-[#EDF5F3] text-[#0E3A3F]" : "opacity-60"
               }`}
             >
               dark
@@ -103,18 +175,20 @@ export default function StudioClient() {
       </header>
 
       <main className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
-        <section className="min-h-0 border-r border-line">
+        {/* Explicit height: CodeMirror height:100% collapses inside an
+            auto-height grid row, leaving a 0-height editor on desktop. */}
+        <section className="h-[45vh] min-h-0 border-r border-line lg:h-auto">
           {code === null ? (
-            <div className="p-5 text-sm opacity-50">Loading…</div>
+            <div className="p-5 text-sm opacity-50">Caricamento…</div>
           ) : (
             <Editor value={code} onChange={setCode} />
           )}
         </section>
         <Preview
           code={debouncedCode}
-          theme={theme}
+          theme={debouncedTheme}
           onSvg={handleSvg}
-          className="min-h-[50vh] lg:min-h-0"
+          className="h-[55vh] lg:h-auto lg:min-h-0"
         />
       </main>
 

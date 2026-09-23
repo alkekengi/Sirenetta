@@ -8,6 +8,12 @@
   --ink: #12312f;
   --accent: #e8674a;
   --line: #b9d6d0;
+  --cm-keyword: #b0512f;
+  --cm-comment: #6b8f8a;
+  --cm-string: #0e6e5c;
+  --cm-number: #7a5fb5;
+  --cm-operator: #0e3a3f;
+  --cm-name: #264e4a;
 }
 
 .dark {
@@ -16,6 +22,12 @@
   --ink: #dcebe8;
   --accent: #f07a5d;
   --line: #1e4a4f;
+  --cm-keyword: #f07a5d;
+  --cm-comment: #7fa8a2;
+  --cm-string: #7fbfb3;
+  --cm-number: #b9a5e8;
+  --cm-operator: #9dc4bd;
+  --cm-name: #dcebe8;
 }
 
 @theme inline {
@@ -39,6 +51,14 @@ body {
 }
 .btn-press:active {
   transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-press {
+    transition: none;
+  }
+  .btn-press:active {
+    transform: none;
+  }
 }
 
 .drafting-grid {
