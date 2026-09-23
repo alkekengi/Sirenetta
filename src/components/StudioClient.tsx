@@ -3,9 +3,17 @@
 import { useCallback, useEffect, useState } from "react";
 import Preview from "@/components/Preview";
 import ThemePanel from "@/components/ThemePanel";
+import Editor from "@/components/Editor";
 import { DEFAULT_THEME, SAMPLE } from "@/lib/theme";
 import { downloadPng, downloadSvg } from "@/lib/export";
 import type { DiagramTheme } from "@/lib/render";
+
+const DRAFT_KEY = "sirenetta.draft";
+
+function loadDraft(): string {
+  if (typeof window === "undefined") return SAMPLE;
+  return localStorage.getItem(DRAFT_KEY) ?? SAMPLE;
+}
 
 function useDebounced<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -17,8 +25,16 @@ function useDebounced<T>(value: T, delay: number): T {
 }
 
 export default function StudioClient() {
-  const [code, setCode] = useState(SAMPLE);
-  const debouncedCode = useDebounced(code, 250);
+  const [code, setCode] = useState<string | null>(null);
+  const debouncedCode = useDebounced(code ?? "", 250);
+
+  useEffect(() => {
+    setCode(loadDraft());
+  }, []);
+
+  useEffect(() => {
+    if (code !== null) localStorage.setItem(DRAFT_KEY, code);
+  }, [code]);
   const [theme, setTheme] = useState<DiagramTheme>({ ...DEFAULT_THEME });
   const [mode, setMode] = useState<"light" | "dark">("dark");
   const [panelOpen, setPanelOpen] = useState(false);
@@ -76,13 +92,11 @@ export default function StudioClient() {
 
       <main className="grid flex-1 grid-cols-1 lg:grid-cols-2">
         <section className="border-r border-line">
-          <textarea
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            spellCheck={false}
-            className="h-full w-full resize-none bg-transparent p-5 font-mono text-sm leading-relaxed outline-none"
-            placeholder="flowchart TD&#10;  A --> B"
-          />
+          {code === null ? (
+            <div className="p-5 text-sm opacity-50">Loading…</div>
+          ) : (
+            <Editor value={code} onChange={setCode} />
+          )}
         </section>
         <Preview
           code={debouncedCode}
