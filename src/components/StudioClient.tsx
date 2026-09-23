@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Preview from "@/components/Preview";
+import ThemePanel from "@/components/ThemePanel";
 import { DEFAULT_THEME, SAMPLE } from "@/lib/theme";
 import type { DiagramTheme } from "@/lib/render";
 
@@ -19,6 +20,7 @@ export default function StudioClient() {
   const debouncedCode = useDebounced(code, 250);
   const [theme, setTheme] = useState<DiagramTheme>({ ...DEFAULT_THEME });
   const [mode, setMode] = useState<"light" | "dark">("dark");
+  const [panelOpen, setPanelOpen] = useState(false);
 
   return (
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
@@ -56,6 +58,27 @@ export default function StudioClient() {
         </section>
         <Preview code={debouncedCode} theme={theme} className="min-h-[50vh] lg:min-h-0" />
       </main>
+
+      <footer>
+        <button
+          onClick={() => setPanelOpen((o) => !o)}
+          aria-expanded={panelOpen}
+          className="btn-press mx-5 my-2 rounded-full border border-line px-4 py-1.5 font-display text-xs font-semibold"
+        >
+          Tema
+        </button>
+        <div
+          className={`grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
+            panelOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          }`}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <div className="border-t border-line px-5 py-4">
+              <ThemePanel theme={theme} onChange={setTheme} />
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
