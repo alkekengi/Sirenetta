@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Preview from "@/components/Preview";
 import ThemePanel from "@/components/ThemePanel";
 import { DEFAULT_THEME, SAMPLE } from "@/lib/theme";
+import { downloadPng, downloadSvg } from "@/lib/export";
 import type { DiagramTheme } from "@/lib/render";
 
 function useDebounced<T>(value: T, delay: number): T {
@@ -21,28 +22,55 @@ export default function StudioClient() {
   const [theme, setTheme] = useState<DiagramTheme>({ ...DEFAULT_THEME });
   const [mode, setMode] = useState<"light" | "dark">("dark");
   const [panelOpen, setPanelOpen] = useState(false);
+  const [lastSvg, setLastSvg] = useState<string | null>(null);
+
+  const handleSvg = useCallback((svg: string | null) => setLastSvg(svg), []);
+
+  function handleDownloadSvg() {
+    if (lastSvg) downloadSvg(lastSvg, "diagram.svg");
+  }
+
+  async function handleDownloadPng() {
+    if (lastSvg) await downloadPng(lastSvg, "diagram.png", 2);
+  }
 
   return (
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
       <header className="flex items-center justify-between px-5 py-3">
         <span className="font-display text-lg font-semibold">sirenetta</span>
-        <div className="rounded-full bg-panel p-1 text-canvas">
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setMode("light")}
-            className={`btn-press rounded-full px-3 py-1 text-xs font-medium ${
-              mode === "light" ? "bg-canvas text-ink" : "opacity-60"
-            }`}
+            onClick={handleDownloadPng}
+            disabled={!lastSvg}
+            className="btn-press rounded-full bg-panel px-4 py-1.5 text-xs font-medium text-canvas disabled:opacity-40"
           >
-            light
+            PNG
           </button>
           <button
-            onClick={() => setMode("dark")}
-            className={`btn-press rounded-full px-3 py-1 text-xs font-medium ${
-              mode === "dark" ? "bg-canvas text-ink" : "opacity-60"
-            }`}
+            onClick={handleDownloadSvg}
+            disabled={!lastSvg}
+            className="btn-press rounded-full bg-panel px-4 py-1.5 text-xs font-medium text-canvas disabled:opacity-40"
           >
-            dark
+            SVG
           </button>
+          <div className="rounded-full bg-panel p-1 text-canvas">
+            <button
+              onClick={() => setMode("light")}
+              className={`btn-press rounded-full px-3 py-1 text-xs font-medium ${
+                mode === "light" ? "bg-canvas text-ink" : "opacity-60"
+              }`}
+            >
+              light
+            </button>
+            <button
+              onClick={() => setMode("dark")}
+              className={`btn-press rounded-full px-3 py-1 text-xs font-medium ${
+                mode === "dark" ? "bg-canvas text-ink" : "opacity-60"
+              }`}
+            >
+              dark
+            </button>
+          </div>
         </div>
       </header>
 
@@ -56,7 +84,12 @@ export default function StudioClient() {
             placeholder="flowchart TD&#10;  A --> B"
           />
         </section>
-        <Preview code={debouncedCode} theme={theme} className="min-h-[50vh] lg:min-h-0" />
+        <Preview
+          code={debouncedCode}
+          theme={theme}
+          onSvg={handleSvg}
+          className="min-h-[50vh] lg:min-h-0"
+        />
       </main>
 
       <footer>

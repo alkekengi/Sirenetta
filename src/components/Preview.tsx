@@ -6,10 +6,11 @@ import { renderDiagram, type DiagramTheme } from "@/lib/render";
 type Props = {
   code: string;
   theme: DiagramTheme;
+  onSvg?: (svg: string | null) => void;
   className?: string;
 };
 
-export default function Preview({ code, theme, className }: Props) {
+export default function Preview({ code, theme, onSvg, className }: Props) {
   const [svg, setSvg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const idRef = useRef(0);
@@ -23,15 +24,17 @@ export default function Preview({ code, theme, className }: Props) {
       if ("svg" in result) {
         setSvg(result.svg);
         setError(null);
+        onSvg?.(result.svg);
       } else {
         setError(result.error);
+        onSvg?.(null);
       }
     });
 
     return () => {
       cancelled = true;
     };
-  }, [code, theme]);
+  }, [code, theme, onSvg]);
 
   if (error) {
     return (
