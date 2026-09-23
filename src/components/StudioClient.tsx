@@ -1,0 +1,51 @@
+"use client";
+
+import { useState } from "react";
+import Preview from "@/components/Preview";
+import { DEFAULT_THEME, SAMPLE } from "@/lib/theme";
+import type { DiagramTheme } from "@/lib/render";
+
+export default function StudioClient() {
+  const [code, setCode] = useState(SAMPLE);
+  const [theme, setTheme] = useState<DiagramTheme>({ ...DEFAULT_THEME });
+  const [mode, setMode] = useState<"light" | "dark">("dark");
+
+  return (
+    <div className="flex min-h-dvh flex-col bg-canvas text-ink">
+      <header className="flex items-center justify-between px-5 py-3">
+        <span className="font-display text-lg font-semibold">sirenetta</span>
+        <div className="rounded-full bg-panel p-1 text-canvas">
+          <button
+            onClick={() => setMode("light")}
+            className={`btn-press rounded-full px-3 py-1 text-xs font-medium ${
+              mode === "light" ? "bg-canvas text-ink" : "opacity-60"
+            }`}
+          >
+            light
+          </button>
+          <button
+            onClick={() => setMode("dark")}
+            className={`btn-press rounded-full px-3 py-1 text-xs font-medium ${
+              mode === "dark" ? "bg-canvas text-ink" : "opacity-60"
+            }`}
+          >
+            dark
+          </button>
+        </div>
+      </header>
+
+      <main className="grid flex-1 grid-cols-1 lg:grid-cols-2">
+        <section className="border-r border-line">
+          <textarea
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            spellCheck={false}
+            className="h-full w-full resize-none bg-transparent p-5 font-mono text-sm leading-relaxed outline-none"
+            placeholder="flowchart TD&#10;  A --> B"
+          />
+        </section>
+        <Preview code={code} theme={theme} className="min-h-[50vh] lg:min-h-0" />
+      </main>
+    </div>
+  );
+}
